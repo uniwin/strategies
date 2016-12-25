@@ -226,14 +226,15 @@ var TTManager = {
                         if (positions[i].ContractType !== obj.symbol) {
                             continue;
                         }
-                        hasPosition = true;
                         var amount = Math.min(insDetail.MaxLimitOrderVolume, positions[i].Amount);
                         if (positions[i].Type == PD_LONG || positions[i].Type == PD_LONG_YD) {
                             exchange.SetDirection(positions[i].Type == PD_LONG ? "closebuy_today" : "closebuy");
-                            orderId = exchange.Sell(depth.Bids[0].Price - (insDetail.PriceTick * SlideTick), Math.min(amount, depth.Bids[0].Amount), obj.symbol, positions[i].Type == PD_LONG ? "平今" : "平昨", 'Bid', depth.Bids[0]);
+                            orderId = exchange.Sell(_N(depth.Bids[0].Price - (insDetail.PriceTick * SlideTick), 2), Math.min(amount, depth.Bids[0].Amount), obj.symbol, positions[i].Type == PD_LONG ? "平今" : "平昨", 'Bid', depth.Bids[0]);
+                            hasPosition = true;
                         } else if (positions[i].Type == PD_SHORT || positions[i].Type == PD_SHORT_YD) {
                             exchange.SetDirection(positions[i].Type == PD_SHORT ? "closesell_today" : "closesell");
-                            orderId = exchange.Buy(depth.Asks[0].Price + (insDetail.PriceTick * SlideTick), Math.min(amount, depth.Asks[0].Amount), obj.symbol, positions[i].Type == PD_SHORT ? "平今" : "平昨", 'Ask', depth.Asks[0]);
+                            orderId = exchange.Buy(_N(depth.Asks[0].Price + (insDetail.PriceTick * SlideTick), 2), Math.min(amount, depth.Asks[0].Amount), obj.symbol, positions[i].Type == PD_SHORT ? "平今" : "平昨", 'Ask', depth.Asks[0]);
+                            hasPosition = true;
                         }
                     }
                     if (hasPosition) {
@@ -332,10 +333,10 @@ var TTManager = {
                     var orderId = null;
                     if (obj.task.action == ACT_LONG) {
                         exchange.SetDirection("buy");
-                        orderId = exchange.Buy(depth.Asks[0].Price + (insDetail.PriceTick * SlideTick), Math.min(remain, depth.Asks[0].Amount), obj.symbol, 'Ask', depth.Asks[0]);
+                        orderId = exchange.Buy(_N(depth.Asks[0].Price + (insDetail.PriceTick * SlideTick), 2), Math.min(remain, depth.Asks[0].Amount), obj.symbol, 'Ask', depth.Asks[0]);
                     } else {
                         exchange.SetDirection("sell");
-                        orderId = exchange.Sell(depth.Bids[0].Price - (insDetail.PriceTick * SlideTick), Math.min(remain, depth.Bids[0].Amount), obj.symbol, 'Bid', depth.Bids[0]);
+                        orderId = exchange.Sell(_N(depth.Bids[0].Price - (insDetail.PriceTick * SlideTick), 2), Math.min(remain, depth.Bids[0].Amount), obj.symbol, 'Bid', depth.Bids[0]);
                     }
                     // symbol not in trading or other else happend
                     if (!orderId) {
@@ -449,7 +450,7 @@ var TTManager = {
             var canOpen = parseInt(account.Balance / (opCode == 1 ? obj.symbolDetail.LongMarginRatio : obj.symbolDetail.ShortMarginRatio) / (lastPrice * 1.2) / obj.symbolDetail.VolumeMultiple);
             unit = Math.min(unit, canOpen);
             if (unit < obj.symbolDetail.MinLimitOrderVolume) {
-                obj.setLastError("可开 " + unit + " 手 过小无法开仓");
+                obj.setLastError("可开 " + unit + " 手 无法开仓, " + (canOpen >= obj.symbolDetail.MinLimitOrderVolume ? "风控触发" : "资金限制"));
                 return;
             }
             obj.setTask((opCode == 1 ? ACT_LONG : ACT_SHORT), unit, function(ret) {
